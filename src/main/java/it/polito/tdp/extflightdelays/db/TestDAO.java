@@ -5,7 +5,7 @@ import java.sql.Connection;
 public class TestDAO {
 
 	public static void main(String[] args) {
-		
+		/*
 		try {
 			Connection connection = DBConnect.getConnection();
 			connection.close();
@@ -19,7 +19,7 @@ public class TestDAO {
 
 		System.out.println(dao.loadAllAirlines());
 		System.out.println(dao.loadAllAirports());
-		System.out.println(dao.loadAllFlights().size());
+		System.out.println(dao.loadAllFlights().size());*/
 	}
 
 }

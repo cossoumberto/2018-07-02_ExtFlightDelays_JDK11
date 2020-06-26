@@ -3,6 +3,8 @@ package it.polito.tdp.extflightdelays;
 import java.net.URL;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.extflightdelays.model.Airport;
+import it.polito.tdp.extflightdelays.model.AirportDistanza;
 import it.polito.tdp.extflightdelays.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -33,7 +35,7 @@ public class FXMLController {
     private Button btnAnalizza;
 
     @FXML
-    private ComboBox<?> cmbBoxAeroportoPartenza;
+    private ComboBox<Airport> cmbBoxAeroportoPartenza;
 
     @FXML
     private Button btnAeroportiConnessi;
@@ -46,17 +48,46 @@ public class FXMLController {
 
     @FXML
     void doAnalizzaAeroporti(ActionEvent event) {
-
+    	try {
+    		Double distanza = Double.parseDouble(distanzaMinima.getText());
+    		model.creaGrafo(distanza);
+    		cmbBoxAeroportoPartenza.getItems().clear();
+    		cmbBoxAeroportoPartenza.getItems().addAll(model.getGrafo().vertexSet());
+    		txtResult.setText("Grafo creato con " + model.getGrafo().vertexSet().size() + " vertici e " +
+    				model.getGrafo().edgeSet().size() + " archi");
+    	} catch (NumberFormatException e){
+    		e.printStackTrace();
+    		txtResult.setText("Inserita distanza non valida");
+    	}
     }
 
     @FXML
     void doCalcolaAeroportiConnessi(ActionEvent event) {
-
+    	if(cmbBoxAeroportoPartenza.getValue()!=null) {
+    		txtResult.clear();
+    		for(AirportDistanza ad : model.getDistanzeAirport(cmbBoxAeroportoPartenza.getValue()))
+    			txtResult.appendText(ad+"\n");
+    	} else {
+    		txtResult.setText("Seleziona Airport");
+    	}
     }
 
     @FXML
     void doCercaItinerario(ActionEvent event) {
-
+    	if(model.getGrafo()!=null || cmbBoxAeroportoPartenza.getValue()!=null) {
+	    	try {
+	    		Double disponibili= Double.parseDouble(numeroVoliTxtInput.getText());
+	    		txtResult.clear();
+	    		for(Airport a : model.viaggio(cmbBoxAeroportoPartenza.getValue(), disponibili))
+	    			txtResult.appendText(a+"\n");
+	    		txtResult.appendText("Sono state percorse " + model.getMigliaPercorse() + " miglia");
+	    	} catch (NumberFormatException e){
+	    		e.printStackTrace();
+	    		txtResult.setText("Inserimento miglia non valido");
+	    	}
+   		} else {
+   			txtResult.setText("Crea grafo e seleziona un aereoporto");
+   		}
     }
 
     @FXML

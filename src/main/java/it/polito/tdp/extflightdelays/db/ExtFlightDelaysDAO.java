@@ -7,9 +7,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import it.polito.tdp.extflightdelays.model.Airline;
 import it.polito.tdp.extflightdelays.model.Airport;
+import it.polito.tdp.extflightdelays.model.CoppiaAirport;
 import it.polito.tdp.extflightdelays.model.Flight;
 
 public class ExtFlightDelaysDAO {
@@ -37,10 +39,8 @@ public class ExtFlightDelaysDAO {
 		}
 	}
 
-	public List<Airport> loadAllAirports() {
+	public void loadAllAirports(Map<Integer, Airport> idMap) {
 		String sql = "SELECT * FROM airports";
-		List<Airport> result = new ArrayList<Airport>();
-
 		try {
 			Connection conn = DBConnect.getConnection();
 			PreparedStatement st = conn.prepareStatement(sql);
@@ -50,12 +50,9 @@ public class ExtFlightDelaysDAO {
 				Airport airport = new Airport(rs.getInt("ID"), rs.getString("IATA_CODE"), rs.getString("AIRPORT"),
 						rs.getString("CITY"), rs.getString("STATE"), rs.getString("COUNTRY"), rs.getDouble("LATITUDE"),
 						rs.getDouble("LONGITUDE"), rs.getDouble("TIMEZONE_OFFSET"));
-				result.add(airport);
+				idMap.put(airport.getId(), airport);
 			}
-
 			conn.close();
-			return result;
-
 		} catch (SQLException e) {
 			e.printStackTrace();
 			System.out.println("Errore connessione al database");
@@ -85,6 +82,40 @@ public class ExtFlightDelaysDAO {
 			conn.close();
 			return result;
 
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Errore connessione al database");
+			throw new RuntimeException("Error Connection Database");
+		}
+	}
+	
+	public List<CoppiaAirport> listCoppieAirport (Double distanza, Map<Integer, Airport> idMap){
+		String sql = "SELECT ORIGIN_AIRPORT_ID AS a1, DESTINATION_AIRPORT_ID AS a2, AVG(DISTANCE) AS d, COUNT(DISTANCE) AS c " +
+					"FROM flights " +
+					"GROUP BY ORIGIN_AIRPORT_ID, DESTINATION_AIRPORT_ID " +
+					"HAVING d>? ";
+		List<CoppiaAirport> list = new ArrayList<>();
+		try {
+			Connection conn = DBConnect.getConnection();
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setDouble(1, distanza);
+			ResultSet res = st.executeQuery();
+
+			while (res.next()) {
+				CoppiaAirport ca = new CoppiaAirport(idMap.get(res.getInt("a1")), idMap.get(res.getInt("a2")), 
+						res.getDouble("d"), res.getInt("c"));
+				CoppiaAirport inversa = new CoppiaAirport(ca.getA2(), ca.getA1(), res.getDouble("d"), res.getInt("c"));
+				if(!list.contains(inversa)){
+						list.add(ca);
+				} else {
+					Double newDist = (((inversa.getDistance()*inversa.getPeso())+(ca.getDistance()*ca.getPeso()))/
+							(inversa.getPeso() + ca.getPeso()));
+					inversa.setDistance(newDist);
+					inversa.setPeso(null);
+				}
+			}
+			conn.close();
+			return list;
 		} catch (SQLException e) {
 			e.printStackTrace();
 			System.out.println("Errore connessione al database");
